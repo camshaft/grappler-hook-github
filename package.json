@@ -1,10 +1,10 @@
 {
   "name": "grappler-hook-github",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "GitHub plugin for grappler",
   "main": "index.js",
   "dependencies": {
-    "nodegit": "~0.1.0"
+    "git-node": "~0.1.1"
   },
   "devDependencies": {
     "grappler": "~0.1.0"
