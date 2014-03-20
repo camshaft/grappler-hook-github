@@ -1,0 +1,25 @@
+{
+  "name": "grappler-hook-github",
+  "version": "0.1.0",
+  "description": "GitHub plugin for grappler",
+  "main": "index.js",
+  "dependencies": {
+    "nodegit": "~0.1.0"
+  },
+  "devDependencies": {
+    "grappler": "~0.1.0"
+  },
+  "scripts": {
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/camshaft/grappler-hook-github.git"
+  },
+  "author": "Cameron Bytheway <bytheway.cameron@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/camshaft/grappler-hook-github/issues"
+  },
+  "homepage": "https://github.com/camshaft/grappler-hook-github"
+}
