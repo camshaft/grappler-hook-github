@@ -31,12 +31,15 @@ module.exports = function(config) {
     var body = task.body;
     var headers = task.headers;
 
+    var event = headers['x-github-event'];
+
+    if (event === 'ping') return fn();
+
     var url = body.repository.url;
     var name = body.repository.name;
     var ref = body.ref;
     var branch = ref.replace('refs/heads/', '');
     var sha = body.after;
-    var event = headers['x-github-event'];
 
     var dir = task.dir;
 
