@@ -4,7 +4,8 @@
   "description": "GitHub plugin for grappler",
   "main": "index.js",
   "dependencies": {
-    "git-node": "~0.1.1"
+    "git-node": "~0.1.1",
+    "mkdirp": "^0.3.5"
   },
   "devDependencies": {
     "grappler": "~0.1.0"

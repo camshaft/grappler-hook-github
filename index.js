@@ -5,6 +5,8 @@
 var git = require('git-node');
 var parseurl = require('url').parse;
 var formaturl = require('url').format;
+var mkdirp = require('mkdirp');
+var exec = require('child_process').exec;
 
 /**
  * Create a GitHub hook
@@ -43,6 +45,8 @@ module.exports = function(config) {
 
     var dir = task.dir;
 
+    if (event === 'delete') return fn(null, name, branch, sha, event);
+
     log('cloning ' + url + ' to ' + dir);
     clone(url, dir, ref, key, log, function(err) {
       log('ready to deploy');
@@ -67,18 +71,30 @@ function clone(url, target, ref, key, log, fn) {
   urlObj.auth = key + ':x-oauth-basic';
   var authurl = formaturl(urlObj) + '.git';
 
-  var remote = git.remote(authurl);
-  var repo = git.repo(target + '.git');
-  var opts = {};
-  opts.want = ref;
-  log('fetching ' + url);
-  repo.fetch(remote, opts, function(err) {
+  var dir = target + '/.git';
+
+  log('creating dir ' + dir);
+  mkdirp(dir, function(err) {
     if (err) return fn(err);
-    log('checking out ' + ref);
-    repo.resolveHashish(ref, function(err, hash) {
+
+    var remote = git.remote(authurl);
+    var repo = git.repo(dir);
+    var opts = {};
+    opts.want = ref;
+    log('fetching ' + url);
+    repo.fetch(remote, opts, function(err) {
       if (err) return fn(err);
-      log('updating head to ' + hash);
-      repo.updateHead(hash, fn);
+      log('checking out ' + ref);
+      repo.resolveHashish(ref, function(err, hash) {
+        if (err) return fn(err);
+        log('updating head to ' + hash);
+        repo.updateHead(hash, function(err) {
+          if (err) return fn(err);
+          exec('git checkout ' + hash, {cwd: target}, function(err, stdout, stderr) {
+            fn(err);
+          });
+        });
+      });
     });
   });
 }
