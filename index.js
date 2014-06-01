@@ -25,35 +25,110 @@ module.exports = function(config) {
 
   return function(app) {
     app.hook('github', '/github', hook);
-  };
+    app.on('task', function(task) {
+      task.on('gh:parsed', function() {
+        fetch(key, task);
+      });
 
-  function hook(task, log, fn) {
-    // TODO verify secret matches
-
-    var body = task.body;
-    var headers = task.headers;
-
-    var event = headers['x-github-event'];
-
-    if (event === 'ping') return fn();
-
-    var url = body.repository.url;
-    var name = body.repository.name;
-    var ref = body.ref;
-    var branch = ref.replace('refs/heads/', '');
-    var sha = body.after;
-
-    var dir = task.dir;
-
-    if (event === 'delete') return fn(null, name, branch, sha, event);
-
-    log('cloning ' + url + ' to ' + dir);
-    clone(url, dir, ref, key, log, function(err) {
-      log('ready to deploy');
-      fn(err, name, branch, sha, event);
+      task.on('ready', handleStatus('pending', task));
+      task.on('error', handleStatus('error', task));
+      task.on('success', handleStatus('success', task));
+      task.on('success', handleSuccess(task));
     });
   };
+
+  function hook(req, log, fn) {
+    // TODO verify secret matches
+    var event = req.headers['x-github-event'];
+    if (event === 'push') return handlePush(key, req, log, fn);
+    if (event === 'pull_request') return handlePullRequest(key, req, log, fn);
+    if (event === 'deployment') return handleDeployment(key, req, log, fn);
+    return fn('pass');
+  };
 };
+
+/**
+ * Handle a pull request event
+ *
+ * steps:
+ *   * check mergability (https://developer.github.com/v3/pulls/#mergability)
+ *   * merge the commit (https://developer.github.com/v3/repos/merging/)
+ *
+ * @doc https://developer.github.com/v3/activity/events/types/#pullrequestevent
+ */
+
+function handlePullRequest(key, task, log, fn) {
+  var body = task.body;
+
+}
+
+/**
+ * Handle a push event
+ *
+ * steps:
+ *   * git clone sha
+ *   * deploy the sha
+ *   * listen for success/failure and update the repo status (https://developer.github.com/v3/repos/statuses/)
+ *   * create a deployment (https://developer.github.com/v3/repos/deployments/#create-a-deployment)
+ */
+
+function handlePush(key, req, log, fn) {
+  var body = req.body;
+  if (!body) return fn(new Error('missing body'));
+
+  var url = body.repository.url;
+  var name = body.repository.name;
+  var ref = body.ref;
+  var branch = ref.replace('refs/heads/', '');
+  var sha = body.after;
+
+  var info = {
+    url: url,
+    name: name,
+    ref: ref,
+    branch: branch,
+    sha: sha,
+    body: body
+  };
+
+  var event = body.deleted ? 'branch-deleted' : 'gh:parsed';
+  fn(null, info, event);
+}
+
+/**
+ * Handle a deployment event
+ *
+ * @doc https://developer.github.com/v3/activity/events/types/#deploymentevent
+ */
+
+function handleDeployment() {
+
+}
+
+function handleStatus(event, task) {
+
+}
+
+/**
+ * Create a deployment
+ */
+
+function handleSuccess(task) {
+
+}
+
+function fetch(key, task) {
+  task.clone('github', function(dir, log) {
+    var url = task.info.url;
+    var ref = task.info.ref;
+    log('cloning ' + url + ' to ' + dir);
+    clone(url, dir, ref, key, log, function(err) {
+      if (err) return task.emit('error', err);
+      log('ready to deploy');
+      task.ready();
+    });
+  });
+}
 
 /**
  * Clone a repo
