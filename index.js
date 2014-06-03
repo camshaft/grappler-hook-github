@@ -74,17 +74,19 @@ function handlePullRequest(key, task, log, fn) {
 
 function handlePush(key, req, log, fn) {
   var body = req.body;
-  if (!body) return fn(new Error('missing body'));
+  var repo = body.repository;
+  if (!body || !repo) return fn(new Error('missing body'));
 
-  var url = body.repository.url;
-  var name = body.repository.name;
+  var url = repo.url;
+  var name = repo.name;
   var ref = body.ref;
   var branch = ref.replace('refs/heads/', '');
   var sha = body.after;
 
   var info = {
-    url: url,
-    name: name,
+    repo: repo.organization + '/' + repo.name,
+    url: repo.url,
+    name: repo.name,
     ref: ref,
     branch: branch,
     sha: sha,
@@ -106,7 +108,7 @@ function handleDeployment() {
 }
 
 function handleStatus(event, task) {
-
+  return function() {};
 }
 
 /**
@@ -114,7 +116,7 @@ function handleStatus(event, task) {
  */
 
 function handleSuccess(task) {
-
+  return function() {};
 }
 
 function fetch(key, task) {
@@ -123,7 +125,10 @@ function fetch(key, task) {
     var ref = task.info.ref;
     log('cloning ' + url + ' to ' + dir);
     clone(url, dir, ref, key, log, function(err) {
-      if (err) return task.emit('error', err);
+      if (err) {
+        log('' + err);
+        return task.emit('error', err);
+      }
       log('ready to deploy');
       task.ready();
     });
